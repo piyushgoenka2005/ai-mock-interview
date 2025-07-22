@@ -30,8 +30,8 @@ const authFormSchema = (type: FormType) => {
 
 const AuthForm = ({ type }: { type: FormType }) => {
   const router = useRouter();
-  const formSchema = authFormSchema(type);
 
+  const formSchema = authFormSchema(type);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,44 +41,43 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       if (type === "sign-up") {
-        const { name, email, password } = values;
+        const { name, email, password } = data;
 
-        const userCredentials = await createUserWithEmailAndPassword(
+        const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
           password
         );
 
         const result = await signUp({
-          uid: userCredentials.user.uid,
+          uid: userCredential.user.uid,
           name: name!,
           email,
           password,
         });
 
-        if (!result?.success) {
-          toast.error(result?.message);
+        if (!result.success) {
+          toast.error(result.message);
           return;
         }
 
         toast.success("Account created successfully. Please sign in.");
         router.push("/sign-in");
       } else {
-        const { email, password } = values;
+        const { email, password } = data;
 
-        const userCredentials = await signInWithEmailAndPassword(
+        const userCredential = await signInWithEmailAndPassword(
           auth,
           email,
           password
         );
 
-        const idToken = await userCredentials.user.getIdToken();
-
+        const idToken = await userCredential.user.getIdToken();
         if (!idToken) {
-          toast.error("Sign In Failed. Please try again.");
+          toast.error("Sign in Failed. Please try again.");
           return;
         }
 
@@ -87,14 +86,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
           idToken,
         });
 
-        toast.success("Sign in successfully.");
+        toast.success("Signed in successfully.");
         router.push("/");
       }
     } catch (error) {
       console.log(error);
       toast.error(`There was an error: ${error}`);
     }
-  }
+  };
 
   const isSignIn = type === "sign-in";
 
@@ -106,7 +105,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
           <h2 className="text-primary-100">PrepWise</h2>
         </div>
 
-        <h3>Practice job interview with AI</h3>
+        <h3>Practice job interviews with AI</h3>
 
         <Form {...form}>
           <form
@@ -119,8 +118,10 @@ const AuthForm = ({ type }: { type: FormType }) => {
                 name="name"
                 label="Name"
                 placeholder="Your Name"
+                type="text"
               />
             )}
+
             <FormField
               control={form.control}
               name="email"
@@ -138,7 +139,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
             />
 
             <Button className="btn" type="submit">
-              {isSignIn ? "Sign in" : "Create an Account"}
+              {isSignIn ? "Sign In" : "Create an Account"}
             </Button>
           </form>
         </Form>
@@ -149,11 +150,12 @@ const AuthForm = ({ type }: { type: FormType }) => {
             href={!isSignIn ? "/sign-in" : "/sign-up"}
             className="font-bold text-user-primary ml-1"
           >
-            {!isSignIn ? "Sign in" : "Sign up"}
+            {!isSignIn ? "Sign In" : "Sign Up"}
           </Link>
         </p>
       </div>
     </div>
   );
 };
+
 export default AuthForm;
