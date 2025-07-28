@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
-import { createFeedback } from "@/lib/actions/general.action";
+import { createFeedback, createInterview } from "@/lib/actions/general.action";
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -34,6 +34,7 @@ const Agent = ({
   const [messages, setMessages] = useState<SavedMessage[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastMessage, setLastMessage] = useState<string>("");
+  const [isCreatingInterview, setIsCreatingInterview] = useState(false);
 
   useEffect(() => {
     const onCallStart = () => {
@@ -113,6 +114,36 @@ const Agent = ({
       }
     }
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
+
+  const handleCreateAndStartInterview = async () => {
+    setIsCreatingInterview(true);
+    
+    try {
+      // Create interview with sample data for frontend role
+      const { success, interviewId: newInterviewId, error } = await createInterview({
+        type: "Mixed",
+        role: "Frontend Developer",
+        level: "Mid-level",
+        techstack: "React,TypeScript,Next.js,Tailwind CSS",
+        amount: 5,
+        userid: userId!,
+      });
+
+      if (success && newInterviewId) {
+        console.log("Interview created successfully with ID:", newInterviewId);
+        // Redirect to the created interview
+        router.push(`/interview/${newInterviewId}`);
+      } else {
+        console.error("Error creating interview:", error);
+        alert("Failed to create interview. Please try again.");
+        setIsCreatingInterview(false);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while creating the interview.");
+      setIsCreatingInterview(false);
+    }
+  };
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
@@ -194,26 +225,55 @@ const Agent = ({
         </div>
       )}
 
-      <div className="w-full flex justify-center">
-        {callStatus !== "ACTIVE" ? (
-          <button className="relative btn-call" onClick={() => handleCall()}>
-            <span
-              className={cn(
-                "absolute animate-ping rounded-full opacity-75",
-                callStatus !== "CONNECTING" && "hidden"
-              )}
-            />
+      <div className="flex flex-col items-center gap-4">
+        {type === "generate" ? (
+          <>
+            {callStatus !== "ACTIVE" ? (
+              <button 
+                className="relative btn-call" 
+                onClick={() => handleCreateAndStartInterview()}
+                disabled={isCreatingInterview}
+              >
+                <span
+                  className={cn(
+                    "absolute animate-ping rounded-full opacity-75",
+                    !isCreatingInterview && "hidden"
+                  )}
+                />
 
-            <span className="relative">
-              {callStatus === "INACTIVE" || callStatus === "FINISHED"
-                ? "Call"
-                : ". . ."}
-            </span>
-          </button>
+                <span className="relative">
+                  {isCreatingInterview ? "Creating Interview..." : "Create Interview"}
+                </span>
+              </button>
+            ) : (
+              <button className="btn-disconnect" onClick={() => handleDisconnect()}>
+                End
+              </button>
+            )}
+          </>
         ) : (
-          <button className="btn-disconnect" onClick={() => handleDisconnect()}>
-            End
-          </button>
+          <>
+            {callStatus !== "ACTIVE" ? (
+              <button className="relative btn-call" onClick={() => handleCall()}>
+                <span
+                  className={cn(
+                    "absolute animate-ping rounded-full opacity-75",
+                    callStatus !== "CONNECTING" && "hidden"
+                  )}
+                />
+
+                <span className="relative">
+                  {callStatus === "INACTIVE" || callStatus === "FINISHED"
+                    ? "Call"
+                    : ". . ."}
+                </span>
+              </button>
+            ) : (
+              <button className="btn-disconnect" onClick={() => handleDisconnect()}>
+                End
+              </button>
+            )}
+          </>
         )}
       </div>
     </>

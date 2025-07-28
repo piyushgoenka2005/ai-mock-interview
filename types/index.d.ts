@@ -32,6 +32,15 @@ interface CreateFeedbackParams {
   feedbackId?: string;
 }
 
+interface CreateInterviewParams {
+  type: string;
+  role: string;
+  level: string;
+  techstack: string;
+  amount: number;
+  userid: string;
+}
+
 interface User {
   name: string;
   email: string;
